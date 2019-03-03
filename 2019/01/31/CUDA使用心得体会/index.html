@@ -96,21 +96,25 @@
 
 
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="categories">
-<meta property="og:url" content="http://yoursite.com/categories/index.html">
+  <meta name="description" content="0x00:前言目前的工作和物理仿真相关，经常会用到CUDA加速方面的知识。年前有幸对仿真算法中的数值求解部分进行了GPU优化加速，当中遇到的坑比较多，当然对自己的技术提升也挺大的。目前对CUDA的理解也算入了门，所以借着这次写博客的机会，将自己CUDA使用的心得体会梳理一遍，记录下来，避免日后忘记。 0x01:编译和链接如果你是使用Visual Studio开发CUDA程序，那应该还是很方便的，毕">
+<meta name="keywords" content="CUDA">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA使用心得体会">
+<meta property="og:url" content="http://yoursite.com/2019/01/31/CUDA使用心得体会/index.html">
 <meta property="og:site_name" content="Mulberry&#39;s Blog">
+<meta property="og:description" content="0x00:前言目前的工作和物理仿真相关，经常会用到CUDA加速方面的知识。年前有幸对仿真算法中的数值求解部分进行了GPU优化加速，当中遇到的坑比较多，当然对自己的技术提升也挺大的。目前对CUDA的理解也算入了门，所以借着这次写博客的机会，将自己CUDA使用的心得体会梳理一遍，记录下来，避免日后忘记。 0x01:编译和链接如果你是使用Visual Studio开发CUDA程序，那应该还是很方便的，毕">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-01-31T01:15:53.634Z">
+<meta property="og:updated_time" content="2019-03-03T16:50:11.659Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="categories">
+<meta name="twitter:title" content="CUDA使用心得体会">
+<meta name="twitter:description" content="0x00:前言目前的工作和物理仿真相关，经常会用到CUDA加速方面的知识。年前有幸对仿真算法中的数值求解部分进行了GPU优化加速，当中遇到的坑比较多，当然对自己的技术提升也挺大的。目前对CUDA的理解也算入了门，所以借着这次写博客的机会，将自己CUDA使用的心得体会梳理一遍，记录下来，避免日后忘记。 0x01:编译和链接如果你是使用Visual Studio开发CUDA程序，那应该还是很方便的，毕">
 
 
 
 
 
 
-  <link rel="canonical" href="http://yoursite.com/categories/">
+  <link rel="canonical" href="http://yoursite.com/2019/01/31/CUDA使用心得体会/">
 
 
 
@@ -120,7 +124,7 @@
   };
 </script>
 
-  <title>categories | Mulberry's Blog</title>
+  <title>CUDA使用心得体会 | Mulberry's Blog</title>
   
 
 
@@ -261,7 +265,7 @@
         
         
           
-          <li class="menu-item menu-item-categories menu-item-active">
+          <li class="menu-item menu-item-categories">
 
     
     
@@ -300,28 +304,6 @@
   
     
 
-    
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-    
-
-  
-
-
   
 
   
@@ -348,63 +330,191 @@
 
   <div id="posts" class="posts-expand">
     
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/31/CUDA使用心得体会/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Mulberry">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mulberry's Blog">
+    </span>
+
     
-    
-    <div class="post-block page">
       <header class="post-header">
 
-<h1 class="post-title" itemprop="name headline">categories
-
-</h1>
-
-<div class="post-meta">
-  
-  
-
-
-
-</div>
-
-</header>
-
-      
-      
-      
-      <div class="post-body">
         
         
-          <div class="category-all-page">
-            <div class="category-all-title">
+          <h1 class="post-title" itemprop="name headline">CUDA使用心得体会
+
               
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
               
                 
-                  
+              
+
+              <time title="创建时间：2019-01-31 01:02:52" itemprop="dateCreated datePublished" datetime="2019-01-31T01:02:52+08:00">2019-01-31</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-03-04 00:50:11" itemprop="dateModified" datetime="2019-03-04T00:50:11+08:00">2019-03-04</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/CUDA/" itemprop="url" rel="index"><span itemprop="name">CUDA</span></a></span>
+
+                
                 
               
-              目前共计 1 个分类
-            </div>
-            <div class="category-all">
-              <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CUDA/">CUDA</a><span class="category-list-count">1</span></li></ul>
-            </div>
-          </div>
-        
-      </div>
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
       
       
+
+      
+        <h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00:前言"></a>0x00:前言</h2><p>目前的工作和物理仿真相关，经常会用到CUDA加速方面的知识。年前有幸对仿真算法中的数值求解部分进行了GPU优化加速，当中遇到的坑比较多，当然对自己的技术提升也挺大的。目前对CUDA的理解也算入了门，所以借着这次写博客的机会，将自己CUDA使用的心得体会梳理一遍，记录下来，避免日后忘记。</p>
+<h2 id="0x01-编译和链接"><a href="#0x01-编译和链接" class="headerlink" title="0x01:编译和链接"></a>0x01:编译和链接</h2><p>如果你是使用Visual Studio开发CUDA程序，那应该还是很方便的，毕竟Visual Studio对CUDA的支持还是很赞的。但是如果你是使用其它非Visual Studio的IDE开发CUDA程序，比如跟我一样，使用Qt Creator，那么确实要折腾一番了，需要对CUDA的编译和链接过程要有一定的了解。</p>
+<h2 id="0x02-运行"><a href="#0x02-运行" class="headerlink" title="0x02:运行"></a>0x02:运行</h2><h2 id="0x03-调试"><a href="#0x03-调试" class="headerlink" title="0x03:调试"></a>0x03:调试</h2><h2 id="0x04-优化"><a href="#0x04-优化" class="headerlink" title="0x04:优化"></a>0x04:优化</h2>
       
     </div>
-    
-
-
 
     
+
     
     
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CUDA/" rel="tag"># CUDA</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
   </div>
 
 
           </div>
           
+
+  
+    <div class="comments" id="gitalk-container">
+    </div>
+
+  
+
+
 
         </div>
         
@@ -425,8 +535,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <div class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -496,6 +615,23 @@
         </div>
       </div>
 
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x00-前言"><span class="nav-number">1.</span> <span class="nav-text">0x00:前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01-编译和链接"><span class="nav-number">2.</span> <span class="nav-text">0x01:编译和链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x02-运行"><span class="nav-number">3.</span> <span class="nav-text">0x02:运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x03-调试"><span class="nav-number">4.</span> <span class="nav-text">0x03:调试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04-优化"><span class="nav-number">5.</span> <span class="nav-text">0x04:优化</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
       
 
       
@@ -637,6 +773,34 @@
 
   
 
+
+  
+    
+
+<script src="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+
+
+<script src="//cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: 'e49f3a236b5430b89d4f',
+    clientSecret: '6e021b18571be81791cc0c5fdf8d679e0d94c7dd',
+    repo: 'polobymulberry.github.io',
+    owner: 'polobymulberry',
+    admin: ['polobymulberry'],
+    id: md5(location.pathname),
+    distractionFreeMode: 'true'
+  });
+  gitalk.render('gitalk-container');
+</script>
+
+  
 
 
   
