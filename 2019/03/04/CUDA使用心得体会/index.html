@@ -108,7 +108,7 @@
 <meta property="og:image" content="http://yoursite.com/2019/03/04/CUDA使用心得体会/virtual-architectures.png">
 <meta property="og:image" content="http://yoursite.com/2019/03/04/CUDA使用心得体会/just-in-time-compilation.png">
 <meta property="og:image" content="http://yoursite.com/2019/03/04/CUDA使用心得体会/cuda-compilation-from-cu-to-executable.png">
-<meta property="og:updated_time" content="2019-03-26T15:31:43.484Z">
+<meta property="og:updated_time" content="2019-03-26T15:37:24.932Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CUDA学习系列(1) | 编译链接篇">
 <meta name="twitter:description" content="0x00 : 前言CUDA的编译链接其实只需要看官方文档cuda-compiler-driver-nvcc即可。这篇文章主要是在此官方文档的基础上，对其内容进行了补充说明，并增加了一些我个人的理解。官方文档中总共有四张图片，我个人认为只要理解透了这四张图片，对CUDA编译链接的理解基本上在日常开发中够用了。下面我会结合这四张图片详细谈谈我对它们的理解。 0x01: 整体流程概述假设当前我们的CUD">
@@ -409,7 +409,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-03-26 23:31:43" itemprop="dateModified" datetime="2019-03-26T23:31:43+08:00">2019-03-26</time>
+                <time title="修改时间：2019-03-26 23:37:24" itemprop="dateModified" datetime="2019-03-26T23:37:24+08:00">2019-03-26</time>
               
             
           </span>
@@ -476,7 +476,10 @@
 <li>用gcc编译器对vectorAdd.cu文件进行预处理，生成8_vectorAdd.cpp1.ii文件，注意后缀名为ii的文件就是预处理后的C++文件。</li>
 <li>使用cicc将8_vectorAdd.cpp1.ii文件处理为 cicc是一个基于LLVM的高层优化器和PTX生成器</li>
 </ol>
-<h2 id="0x06-实战-amp-心得体会"><a href="#0x06-实战-amp-心得体会" class="headerlink" title="0x06 : 实战&amp;心得体会"></a>0x06 : 实战&amp;心得体会</h2><h2 id="0x07-参考文献"><a href="#0x07-参考文献" class="headerlink" title="0x07 : 参考文献"></a>0x07 : 参考文献</h2>
+<h2 id="0x06-实战-amp-心得体会"><a href="#0x06-实战-amp-心得体会" class="headerlink" title="0x06 : 实战&amp;心得体会"></a>0x06 : 实战&amp;心得体会</h2><h2 id="0x07-参考文献"><a href="#0x07-参考文献" class="headerlink" title="0x07 : 参考文献"></a>0x07 : 参考文献</h2><ul>
+<li><a href="https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html" target="_blank" rel="noopener">cuda-compiler-driver-nvcc</a></li>
+</ul>
+
       
     </div>
 
