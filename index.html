@@ -573,7 +573,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-05-26 16:36:19" itemprop="dateModified" datetime="2019-05-26T16:36:19+08:00">2019-05-26</time>
+                <time title="修改时间：2019-05-26 22:09:02" itemprop="dateModified" datetime="2019-05-26T22:09:02+08:00">2019-05-26</time>
               
             
           </span>
@@ -626,7 +626,7 @@
 
       
         
-          <h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 : 前言"></a>0x00 : 前言</h2><p>上一篇主要学习了CUDA编译链接相关知识<a href="https://polobymulberry.github.io/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97%281%29%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/">CUDA学习系列(1) | 编译链接篇</a>。了解编译链接相关知识可以解决很多CUDA编译链接过程中的疑难杂症，比如类似CUDA程序一启动就crash很有可能就是Real Architecture版本指定错误。当然，要真正提升CUDA程序的性能，就需要对CUDA本身的运行机制有所了解。CUDA有两个非常重要的特性，一个就是Thread Hierarchy，另一个就是Memory Hierarchy。这篇文章主要阐述CUDA Thread Hierarchy，至于Memory Hierarchy则放在下一篇[]</p>
+          <h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 : 前言"></a>0x00 : 前言</h2><p>上一篇主要学习了CUDA编译链接相关知识<a href="https://polobymulberry.github.io/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97%281%29%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/">CUDA学习系列(1) | 编译链接篇</a>。了解编译链接相关知识可以解决很多CUDA编译链接过程中的疑难杂症，比如CUDA程序一启动就crash很有可能就是Real Architecture版本指定错误。当然，要真正提升CUDA程序的性能，就需要对CUDA本身的运行机制有所了解。顺便提及一下，CUDA有两个非常重要的特性，一个是<strong>Thread Hierarchy</strong>，主要是说CUDA运行时，其线程是如何分层次执行的，另一个是<strong>Memory Hierarchy</strong>，主要说CUDA显存是如何分层次进行分配和管理的。这篇文章主要阐述的是CUDA运行机制，也就是CUDA Thread Hierarchy，至于Memory Hierarchy则放在下一篇<a href="https://polobymulberry.github.io/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97%283%29%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/">CUDA学习系列(3) | 显存篇</a>进行详细介绍。</p>
           <!--noindex-->
           
             <div class="post-button text-center">
