@@ -109,7 +109,7 @@
 <meta property="og:image" content="https://polobymulberry.github.io/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Hierarchy.png">
 <meta property="og:image" content="https://polobymulberry.github.io/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/More_Threads_With_Fewer_Register_Per_Thread.png">
 <meta property="og:image" content="https://polobymulberry.github.io/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Block_Memory.png">
-<meta property="og:updated_time" content="2019-06-08T15:44:23.420Z">
+<meta property="og:updated_time" content="2019-06-08T16:53:22.998Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CUDA学习系列(3) | 显存篇">
 <meta name="twitter:description" content="0x00 : 前言上一篇文章CUDA学习系列(2) | 运行篇主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次">
@@ -410,7 +410,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-06-08 23:44:23" itemprop="dateModified" datetime="2019-06-08T23:44:23+08:00">2019-06-08</time>
+                <time title="修改时间：2019-06-09 00:53:22" itemprop="dateModified" datetime="2019-06-09T00:53:22+08:00">2019-06-09</time>
               
             
           </span>
@@ -486,20 +486,26 @@
 <li>作为Global Memory的Program-Managed Cache，提高Gloabl Memory读取性能</li>
 </ul>
 <ol start="2">
-<li><p><strong>L1 Cache</strong><br>L1 Cache通常和L2 Cache一起用，通常是用来缓存Global Memory或者Local Memory的读取数据。在SM上，Shared Memory和L1 Cache用的是同一个On-Chip Memory，所以有下面这个函数对Shared Memory和L1 Cache的大小进行配置。</p>
-<figure class="highlight nimrod"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * cudaFuncCachePreferNone: no preference (default)</span><br><span class="line"> * cudaFuncCachePreferShared: prefer <span class="number">48</span>KB <span class="literal">shared</span> memory <span class="keyword">and</span> <span class="number">16</span>KB <span class="type">L1</span> cache</span><br><span class="line"> * cudaFuncCachePreferL1: prefer <span class="number">48</span>KB <span class="type">L1</span> cache <span class="keyword">and</span> <span class="number">16</span>KB <span class="literal">shared</span> memory</span><br><span class="line"> * cudaFuncCachePreferEqual: <span class="type">Prefer</span> equal size <span class="keyword">of</span> <span class="type">L1</span> cache <span class="keyword">and</span> <span class="literal">shared</span> memory, both <span class="number">32</span>KB</span><br><span class="line"> */</span><br><span class="line">cudaError_t cudaFuncSetCacheConfig(<span class="keyword">const</span> <span class="built_in">void</span>* func, <span class="keyword">enum</span> cudaFuncCache cacheConfig);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>Read Only Cache</strong></p>
-</li>
-<li><p><strong>Constant Cache</strong></p>
+<li><strong>L1 Cache</strong><br>L1 Cache通常和L2 Cache一起用，通常是用来缓存Global Memory或者Local Memory的读取数据。在SM上，Shared Memory和L1 Cache用的是同一个On-Chip Memory，所以有下面这个函数对Shared Memory和L1 Cache的大小进行配置。<figure class="highlight nimrod"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * cudaFuncCachePreferNone: no preference (default)</span><br><span class="line"> * cudaFuncCachePreferShared: prefer <span class="number">48</span>KB <span class="literal">shared</span> memory <span class="keyword">and</span> <span class="number">16</span>KB <span class="type">L1</span> cache</span><br><span class="line"> * cudaFuncCachePreferL1: prefer <span class="number">48</span>KB <span class="type">L1</span> cache <span class="keyword">and</span> <span class="number">16</span>KB <span class="literal">shared</span> memory</span><br><span class="line"> * cudaFuncCachePreferEqual: <span class="type">Prefer</span> equal size <span class="keyword">of</span> <span class="type">L1</span> cache <span class="keyword">and</span> <span class="literal">shared</span> memory, both <span class="number">32</span>KB</span><br><span class="line"> */</span><br><span class="line">cudaError_t cudaFuncSetCacheConfig(<span class="keyword">const</span> <span class="built_in">void</span>* func, <span class="keyword">enum</span> cudaFuncCache cacheConfig);</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-<h3 id="Grid-Memory"><a href="#Grid-Memory" class="headerlink" title="Grid Memory"></a>Grid Memory</h3><ol>
-<li><p>Global Memory</p>
+<p>L1 Cache是可以通过编译选项将其关闭/打开的。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// disable L1 <span class="keyword">Cache</span></span><br><span class="line">-Xptxas -dlcm=cg</span><br><span class="line">// <span class="keyword">enable</span> L1 <span class="keyword">Cache</span></span><br><span class="line">-Xptxas -dlcm=ca</span><br></pre></td></tr></table></figure></p>
+<ol start="3">
+<li><p><strong>Read Only Texture Cache</strong><br>Read Only Texture Cache是用来缓存Texture Memory的。它有一个强大的特性就是支持硬件级别的插值，对于2D纹理这类数据会有很大的用处。</p>
 </li>
-<li><p>Constant Memory</p>
+<li><p><strong>Read Only Constant Cache</strong><br>Read Only Constant Cache是用来缓存Constant Memory的。相对于Texture Cache，虽然都是Read Only，但是Constant Cache更适合Uniform Access，而Texture Cache更适合Scattered Access。</p>
 </li>
-<li><p>Texture Memory</p>
+</ol>
+<h3 id="Grid-Memory"><a href="#Grid-Memory" class="headerlink" title="Grid Memory"></a>Grid Memory</h3><p>Grid Memory类似Host端的主存，其实它也是唯一和Host端的主存进行转移的显存。</p>
+<ol>
+<li><p><strong>Global Memory</strong><br>Global Memory应该是平常开发过程中打交道最多的一种Memory类型，最大特点就是空间大但是延迟高。Global Memory变量使用<strong>device</strong>进行声明。虽然Global Memory本质上没有什么特殊的，但是Global Memory的使用和管理方面需要注意的点非常多，下一小节会详细讨论。</p>
+</li>
+<li><p><strong>Constant Memory</strong><br>对于一些常数非常适合放在Constant Memory中。并且Constant Memory变量需要使用<strong>constant</strong>进行声明。整个Constant Memory变量的使用可以参考如下代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// f(x) = a0*x0+a1*x1+a2*x2+a3*x3+a4*x4</span></span><br><span class="line">__constant__ <span class="keyword">float</span> coef[<span class="number">5</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用Constant Memory设置多项式的系数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setup_coef_constant</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> h_coef[] = &#123;a0, a1, a2, a3, a4&#125;;</span><br><span class="line">    <span class="comment">// cudaError_t cudaMemcpyToSymbol(const void* symbol, const void* src, size_t count);</span></span><br><span class="line">    cudaMemcpyToSymbol(coef, h_coef, (<span class="number">5</span>) * <span class="keyword">sizeof</span>(<span class="keyword">float</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Texture Memory</strong><br>Texture Memory是一种特殊类型的Global Memory。但是Texture Memory顾名思义，对于2D存储的数据有很好的空间局部性。</p>
+</li>
+<li><p><strong>L2 Cache</strong><br>L2 Cache也是用来做缓存的，直接缓存Global Memory的数据。和L1 Cache不同的在于，L2 Cache是Per-Device Cache，而L1 Cache是Per-SM Cache。</p>
 </li>
 </ol>
 <h2 id="0x02-Memory-Management"><a href="#0x02-Memory-Management" class="headerlink" title="0x02 : Memory Management"></a>0x02 : Memory Management</h2><h3 id="Global-Memory"><a href="#Global-Memory" class="headerlink" title="Global Memory"></a>Global Memory</h3><ol>
