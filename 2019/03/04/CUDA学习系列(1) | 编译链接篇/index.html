@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="0x00 : 前言CUDA的编译链接其实只需要看官方文档cuda-compiler-driver-nvcc即可。本文主要是在此官方文档的基础上，对其内容进行了补充说明，并增加了一些我个人的理解。官方文档中总共有四张图片，我个人认为只要理解透了这四张图片，对CUDA编译链接的理解基本上在日常开发中够用了。下面我会结合这四张图片详细谈谈我对它们的理解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA学习系列(1) | 编译链接篇">
+<meta property="og:url" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20|%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/index.html">
+<meta property="og:site_name" content="Mulberry&#39;s Blog">
+<meta property="og:description" content="0x00 : 前言CUDA的编译链接其实只需要看官方文档cuda-compiler-driver-nvcc即可。本文主要是在此官方文档的基础上，对其内容进行了补充说明，并增加了一些我个人的理解。官方文档中总共有四张图片，我个人认为只要理解透了这四张图片，对CUDA编译链接的理解基本上在日常开发中够用了。下面我会结合这四张图片详细谈谈我对它们的理解。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/nvcc-whole-compilation.png">
+<meta property="og:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/nvcc-options-for-separate-compilation.png">
+<meta property="og:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/virtual-architectures.png">
+<meta property="og:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/just-in-time-compilation.png">
+<meta property="og:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/cuda-compilation-from-cu-to-executable.png">
+<meta property="article:published_time" content="2019-03-03T16:52:22.000Z">
+<meta property="article:modified_time" content="2019-05-26T05:43:18.000Z">
+<meta property="article:author" content="Pan Jianxiong">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/nvcc-whole-compilation.png">
+
+
+<link rel="canonical" href="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20|%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20|%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/","path":"2019/03/04/CUDA学习系列(1) | 编译链接篇/","title":"CUDA学习系列(1) | 编译链接篇"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CUDA学习系列(1) | 编译链接篇 | Mulberry's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Mulberry's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">沉淀自我</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x00-%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">0x00 : 前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01-%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B%E6%A6%82%E8%BF%B0"><span class="nav-number">2.</span> <span class="nav-text">0x01: 整体流程概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x02-Separate-Compilation"><span class="nav-number">3.</span> <span class="nav-text">0x02 : Separate Compilation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x03-Virtual-and-Real-Architectures"><span class="nav-number">4.</span> <span class="nav-text">0x03 : Virtual and Real Architectures</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04-Just-in-Time-Compilation"><span class="nav-number">5.</span> <span class="nav-text">0x04 : Just-in-Time Compilation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x05-%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">6.</span> <span class="nav-text">0x05 : 整体流程详解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x06-%E5%BF%83%E5%BE%97%E4%BD%93%E4%BC%9A"><span class="nav-number">7.</span> <span class="nav-text">0x06 : 心得体会</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x07-%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">8.</span> <span class="nav-text">0x07 : 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Pan Jianxiong"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Pan Jianxiong</p>
+  <div class="site-description" itemprop="description">专注3D应用全栈研发<br>分享产品思考与实践</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/polobymulberry" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;polobymulberry" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jianxiongpan@gmail.com" title="E-Mail → mailto:jianxiongpan@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20|%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Pan Jianxiong">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mulberry's Blog">
+      <meta itemprop="description" content="专注3D应用全栈研发<br>分享产品思考与实践">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CUDA学习系列(1) | 编译链接篇 | Mulberry's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA学习系列(1) | 编译链接篇
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-03-04 00:52:22" itemprop="dateCreated datePublished" datetime="2019-03-04T00:52:22+08:00">2019-03-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2019-05-26 13:43:18" itemprop="dateModified" datetime="2019-05-26T13:43:18+08:00">2019-05-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/CUDA/" itemprop="url" rel="index"><span itemprop="name">CUDA</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/04/CUDA学习系列(1) | 编译链接篇/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 : 前言"></a>0x00 : 前言</h2><p>CUDA的编译链接其实只需要看官方文档<a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html">cuda-compiler-driver-nvcc</a>即可。本文主要是在此官方文档的基础上，对其内容进行了补充说明，并增加了一些我个人的理解。<br>官方文档中总共有四张图片，我个人认为只要理解透了这四张图片，对CUDA编译链接的理解基本上在日常开发中够用了。下面我会结合这四张图片详细谈谈我对它们的理解。</p>
+<span id="more"></span>
+
+<h2 id="0x01-整体流程概述"><a href="#0x01-整体流程概述" class="headerlink" title="0x01: 整体流程概述"></a>0x01: 整体流程概述</h2><p>假设当前我们的CUDA工程中有三个文件，分别为x.cu、y.cu、y.h，其中x.cu对y.h&#x2F;cu中定义的device变量和函数进行了调用。整个代码参考的<a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#examples">cuda-compiler-driver-nvcc&#x2F;examples</a>里面内容。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//---------- y.h ----------</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> N 8</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> __device__ <span class="type">int</span> g[N];</span><br><span class="line"><span class="function"><span class="keyword">extern</span> __device__ <span class="type">void</span> <span class="title">bar</span><span class="params">(<span class="type">void</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//---------- y.cu ----------</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;y.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">__device__ <span class="type">int</span> g[N];</span><br><span class="line"></span><br><span class="line"><span class="function">__device__ <span class="type">void</span> <span class="title">bar</span> <span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  g[threadIdx.x]++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//---------- x.cu ----------</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;y.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">foo</span> <span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  __shared__ <span class="type">int</span> a[N];</span><br><span class="line">  a[threadIdx.x] = threadIdx.x;</span><br><span class="line"></span><br><span class="line">  __syncthreads();</span><br><span class="line"></span><br><span class="line">  g[threadIdx.x] = a[blockDim.x - threadIdx.x - <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">  <span class="built_in">bar</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span> <span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> i;</span><br><span class="line">  <span class="type">int</span> *dg, hg[N];</span><br><span class="line">  <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  foo&lt;&lt;&lt;<span class="number">1</span>, N&gt;&gt;&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span>(<span class="built_in">cudaGetSymbolAddress</span>((<span class="type">void</span>**)&amp;dg, g))&#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;couldn&#x27;t get the symbol addr\n&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span>(<span class="built_in">cudaMemcpy</span>(hg, dg, N * <span class="built_in">sizeof</span>(<span class="type">int</span>), cudaMemcpyDeviceToHost))&#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;couldn&#x27;t memcpy\n&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">    sum += hg[i];</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 1+2+3+...+7+8=36</span></span><br><span class="line">  <span class="keyword">if</span> (sum == <span class="number">36</span>) &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;PASSED\n&quot;</span>);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;FAILED (%d)\n&quot;</span>, sum);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下图基本上描述了上述代码的编译过程：</p>
+<img src="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/nvcc-whole-compilation.png" class="">
+
+<p>对应的编译指令如下，分别对应上图的三个阶段</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// device code指的是CUDA相关代码，host object指的是c++代码编译出来的产物</span></span><br><span class="line"><span class="comment">// 将x.cu和y.cu中的device code分别嵌入到其对应的host object中，即x.o和y.o</span></span><br><span class="line">➜  nvcc <span class="attr">--gpu-architecture</span>=sm_50 <span class="attr">--device-c</span> <span class="attribute">x</span>.cu y.cu</span><br><span class="line"><span class="comment">// 使用device-link将x.o和y.o中的device code链接在一起，得到link.o</span></span><br><span class="line">➜  nvcc <span class="attr">--gpu-architecture</span>=sm_50 <span class="attr">--device-link</span> <span class="attribute">x</span>.o y.o --output-file a_dlink.o</span><br><span class="line"><span class="comment">// 将链接后的link.o和其他host object链接在一起，得到最终产物</span></span><br><span class="line">➜  g++ <span class="attribute">x</span>.o y.o a_dlink.o -L&lt;path&gt; -lcudart // 这里&lt;path&gt;替换成你libcudart.so对应路径</span><br></pre></td></tr></table></figure>
+
+<p>简单点说就是先将所有device code链接到一起，再和其它host object链接成最终产物。至此，对CUDA编译的整体流程上有了大概的了解。<br>回头再看上面三行编译指令，nvcc、–device-link这些命令或参数就比较容易理解了，但是还不够，比如上述指令中的–gpu-architecture&#x3D;sm_50和–device-c是什么意思呢？这就涉及到CUDA编译的另外两个重要概念：<strong>1.Separate Compilation</strong> <strong>2.Virtual and Real Architectures</strong>。</p>
+<h2 id="0x02-Separate-Compilation"><a href="#0x02-Separate-Compilation" class="headerlink" title="0x02 : Separate Compilation"></a>0x02 : Separate Compilation</h2><p>CUDA程序的编译，尤其是大型的CUDA程序编译过程中，Separate Compilation起到了举足轻重作用。要说明白Separate Compilation是什么，就得知道为什么要有Separate Compilation这个机制？<br>CUDA 5.0之前，是无法支持extern和static这两个关键词的(这部分我没有考究，欢迎大家指正)，这就意味着对于0x01章节中的那段代码，是无法编译的，因为你无法跨文件访问device变量和函数。对于CUDA这种经常会使用全局变量和全局函数的程序，支持extern和static这两个关键词就显得至关重要。extern可以让你跨文件访问device变量和函数，static保证了同名的device变量在不同文件内符号是不同的。所以在此之前，要编译CUDA程序，必须要将所有的device变量和函数放到一个文件里，这也被称作Whole Program Compilation。<br>对于0x01章节中那个代码，如果使用Separate Compilation，那么device相关编译将会分为两步。第一步是将<strong>relocatable device code</strong>编译到对应host object中，比如x.o和y.o。第二步是使用nvlink将x.o和y.o中的device code链接到一起得到a_dlink.o。这里之所以称第一步编译的device code为relocatable，意思是说这些device code在host object的位置会在第二步重新定位(relocatable)。对比Whole Program Compilation，我们称其device code为executable device code，意思是编译后的device code在host object中已经定位好了，一直到生成可执行文件都是不需要重新定位的(executable)。<br>当然，CUDA 5.0以后虽然支持Separate Compilation了，但是默认也是不开启的，比如下面我直接使用–compile进行编译，就会报错。</p>
+<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">➜  nvcc <span class="comment">--gpu-architecture=sm_50 --compile x.cu y.cu               </span></span><br><span class="line">y.h(<span class="number">4</span>): warning: extern declaration <span class="keyword">of</span> <span class="keyword">the</span> entity g is treated <span class="keyword">as</span> <span class="keyword">a</span> static definition</span><br><span class="line">ptxas fatal   : Unresolved extern <span class="function"><span class="keyword">function</span> <span class="string">&#x27;_Z3barv&#x27;</span></span></span><br></pre></td></tr></table></figure>
+
+<p>下图对Separate Compilation的流程做了简单描述：</p>
+<img src="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/nvcc-options-for-separate-compilation.png" class="">
+
+<h2 id="0x03-Virtual-and-Real-Architectures"><a href="#0x03-Virtual-and-Real-Architectures" class="headerlink" title="0x03 : Virtual and Real Architectures"></a>0x03 : Virtual and Real Architectures</h2><p>大家如果看过CUDA的编译选项，一定记得看过类似下面这条指令：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">➜  nvcc x.cu <span class="attribute">--gpu-architecture</span>=compute_50 <span class="attribute">--gpu-code</span>=sm_50</span><br></pre></td></tr></table></figure>
+
+<p>尤其是对其中compute_xx和sm_xx感到困惑。其实compute_xx就是对应GPU的Virtual Architecture，而sm_xx就是对应GPU的Real Architecture。至于后面的数字，代表的是GPU不同架构的版本。<br>不同的架构其实对应的是指令集的不同，类比CPU指令中的x86、amd64等。所以这里的Virtual和Real架构其实也是两种不同的指令集，其中Virtual Architecture会生成一种中间产物PTX(Parallel Thread Execution)，可以认为它是Virtual Architecture的汇编产物。Virtual Architecture是一个通用的指令集，主要是为了考虑不同显卡之间的兼容性。Real Architecture提供的是真实GPU上的指令集，也是最终CUDA程序运行的指令集。所以一般在选择编译选项的时候，Virtual Architecture的版本要选择低一些，因为这样可以大大提高兼容性，也就是说可以跑在更多的CUDA机器上。而Real Architecture尽量使用最新的版本，因为一般来说最新的版本会进行更多的优化。<br>从下图我们可以看出，CUDA程序编译时，首先会根据你指定的Virtual Architecture选项生成.ptx文件，然后再根据Real Architecture的选项将.ptx文件编译成.cubin文件，最终再经过一系列处理.cubin文件会链接到目标产物中。</p>
+<img src="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/virtual-architectures.png" class="">
+
+<p>因为每一代的显卡的指令集是不一样的，而你在编译CUDA程序的时候，是不知道你的程序最终会跑在哪种显卡上，也就是说你不知道应该指定sm_xx什么版本。所以就出现了Just-in-Time Compilation的概念</p>
+<h2 id="0x04-Just-in-Time-Compilation"><a href="#0x04-Just-in-Time-Compilation" class="headerlink" title="0x04 : Just-in-Time Compilation"></a>0x04 : Just-in-Time Compilation</h2><p>JIT的概念使用的比较广泛，比如Java就使用了JIT的概念，可以将.ptx文件类比Java的.class文件。JIT的好处太多了，这里就不赘述了。有兴趣的可以参考知乎上的讨论<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/21093419">如何通俗易懂地介绍「即时编译」（JIT），它的优点和缺点是什么？</a>。<br>简单点说，CUDA中的JIT就是在CUDA程序运行时，将.ptx文件根据目标平台编译为对应的.cubin文件，并链接到目标产物中。当然，这会造成程序启动会慢一些，因为要根据平台生成二进制文件，但是也只是第一次启动比较慢，因为之后通常会将刚刚生成的二进制文件缓存下来。<br>下图阐述的就是CUDA的JIT机制。</p>
+<img src="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/just-in-time-compilation.png" class="">
+
+<h2 id="0x05-整体流程详解"><a href="#0x05-整体流程详解" class="headerlink" title="0x05 : 整体流程详解"></a>0x05 : 整体流程详解</h2><p>CUDA的整体编译链接过程如图所示：</p>
+<img src="/2019/03/04/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(1)%20%7C%20%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E7%AF%87/cuda-compilation-from-cu-to-executable.png" class="">
+
+<p>上面这幅流程图基本上将CUDA的编译链接过程描绘得比较详细，接下来我再结合一个实际的CUDA编译链接案例对这幅流程图进行详细说明。<br>为了方便，我选择了cuda samples里面的vectorAdd程序进行编译。当然我需要在编译选项中添加-dryrun选项，保证可以在控制台上列出所有的编译子命令而不进行真实的编译。下面就是控制台打印出来的vectorAdd.cu编译的整个过程。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">➜  vectorAdd nvcc -dryrun --include-path=&quot;../../common/inc&quot; vectorAdd.cu</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _SPACE_=</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _CUDART_=cudart</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _HERE_=/usr/local/cuda/bin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _THERE_=/usr/local/cuda/bin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _TARGET_SIZE_=</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _TARGET_DIR_=</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ _TARGET_DIR_=targets/x86_64-linux</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ TOP=/usr/local/cuda/bin/..</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ NVVMIR_LIBRARY_DIR=/usr/local/cuda/bin/../nvvm/libdevice</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ LD_LIBRARY_PATH=/usr/local/cuda/bin/../lib:<span class="string">&quot;&quot;</span>:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64<span class="string">&quot;:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ PATH=/usr/local/cuda/bin/../nvvm/bin:/usr/local/cuda/bin:/home/pjx/anaconda3/bin:/usr/local/cuda/bin:/usr/local/MATLAB/R2017b/bin:/home/pjx/anaconda3/bin:/usr/local/cuda/bin:/home/pjx/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/lib/jvm/java-11-oracle/bin:/usr/lib/jvm/java-11-oracle/db/bin:/home/pjx/bin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ INCLUDES=<span class="string">&quot;-I/usr/local/cuda/bin/../targets/x86_64-linux/include&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ LIBRARIES=  <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib/stubs&quot;</span> <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ CUDAFE_FLAGS=</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ PTXAS_FLAGS=</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ gcc -std=c++14 -D__CUDA_ARCH__=300 -E -x c++  -DCUDA_DOUBLE_MATH_FUNCTIONS -D__CUDACC__ -D__NVCC__  -I<span class="string">&quot;../../common/inc&quot;</span> <span class="string">&quot;-I/usr/local/cuda/bin/../targets/x86_64-linux/include&quot;</span>    -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=130 -include <span class="string">&quot;cuda_runtime.h&quot;</span> -m64 <span class="string">&quot;vectorAdd.cu&quot;</span> &gt; <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-8_vectorAdd.cpp1.ii&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ cicc --c++14 --gnu_version=70300 --allow_managed   -<span class="built_in">arch</span> compute_30 -m64 -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name <span class="string">&quot;tmpxft_000003b0_00000000-2_vectorAdd.fatbin.c&quot;</span> -tused -nvvmir-library <span class="string">&quot;/usr/local/cuda/bin/../nvvm/libdevice/libdevice.10.bc&quot;</span> --gen_module_id_file --module_id_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-3_vectorAdd.module_id&quot;</span> --orig_src_file_name <span class="string">&quot;vectorAdd.cu&quot;</span> --gen_c_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.c&quot;</span> --stub_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.stub.c&quot;</span> --gen_device_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.gpu&quot;</span>  <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-8_vectorAdd.cpp1.ii&quot;</span> -o <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.ptx&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ ptxas -<span class="built_in">arch</span>=sm_30 -m64  <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.ptx&quot;</span>  -o <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-9_vectorAdd.sm_30.cubin&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ fatbinary --create=<span class="string">&quot;/tmp/tmpxft_000003b0_00000000-2_vectorAdd.fatbin&quot;</span> -64 <span class="string">&quot;--image=profile=sm_30,file=/tmp/tmpxft_000003b0_00000000-9_vectorAdd.sm_30.cubin&quot;</span> <span class="string">&quot;--image=profile=compute_30,file=/tmp/tmpxft_000003b0_00000000-5_vectorAdd.ptx&quot;</span> --embedded-fatbin=<span class="string">&quot;/tmp/tmpxft_000003b0_00000000-2_vectorAdd.fatbin.c&quot;</span> --cuda</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ <span class="built_in">rm</span> /tmp/tmpxft_000003b0_00000000-2_vectorAdd.fatbin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ gcc -std=c++14 -E -x c++ -D__CUDACC__ -D__NVCC__  -I<span class="string">&quot;../../common/inc&quot;</span> <span class="string">&quot;-I/usr/local/cuda/bin/../targets/x86_64-linux/include&quot;</span>    -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=130 -include <span class="string">&quot;cuda_runtime.h&quot;</span> -m64 <span class="string">&quot;vectorAdd.cu&quot;</span> &gt; <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-4_vectorAdd.cpp4.ii&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ cudafe++ --c++14 --gnu_version=70300 --allow_managed  --m64 --parse_templates --gen_c_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.cpp&quot;</span> --stub_file_name <span class="string">&quot;tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.stub.c&quot;</span> --module_id_file_name <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-3_vectorAdd.module_id&quot;</span> <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-4_vectorAdd.cpp4.ii&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ gcc -std=c++14 -D__CUDA_ARCH__=300 -c -x c++  -DCUDA_DOUBLE_MATH_FUNCTIONS -I<span class="string">&quot;../../common/inc&quot;</span> <span class="string">&quot;-I/usr/local/cuda/bin/../targets/x86_64-linux/include&quot;</span>   -m64 -o <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-10_vectorAdd.o&quot;</span> <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-5_vectorAdd.cudafe1.cpp&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ nvlink --<span class="built_in">arch</span>=sm_30 --register-link-binaries=<span class="string">&quot;/tmp/tmpxft_000003b0_00000000-6_a_dlink.reg.c&quot;</span>  -m64   <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib/stubs&quot;</span> <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib&quot;</span> -cpu-arch=X86_64 <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-10_vectorAdd.o&quot;</span>  -o <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-11_a_dlink.sm_30.cubin&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ fatbinary --create=<span class="string">&quot;/tmp/tmpxft_000003b0_00000000-7_a_dlink.fatbin&quot;</span> -64 -<span class="built_in">link</span> <span class="string">&quot;--image=profile=sm_30,file=/tmp/tmpxft_000003b0_00000000-11_a_dlink.sm_30.cubin&quot;</span> --embedded-fatbin=<span class="string">&quot;/tmp/tmpxft_000003b0_00000000-7_a_dlink.fatbin.c&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ <span class="built_in">rm</span> /tmp/tmpxft_000003b0_00000000-7_a_dlink.fatbin</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ gcc -std=c++14 -c -x c++ -DFATBINFILE=<span class="string">&quot;\&quot;/tmp/tmpxft_000003b0_00000000-7_a_dlink.fatbin.c\&quot;&quot;</span> -DREGISTERLINKBINARYFILE=<span class="string">&quot;\&quot;/tmp/tmpxft_000003b0_00000000-6_a_dlink.reg.c\&quot;&quot;</span> -I. -D__NV_EXTRA_INITIALIZATION= -D__NV_EXTRA_FINALIZATION= -D__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__  -I<span class="string">&quot;../../common/inc&quot;</span> <span class="string">&quot;-I/usr/local/cuda/bin/../targets/x86_64-linux/include&quot;</span>    -D__CUDACC_VER_MAJOR__=10 -D__CUDACC_VER_MINOR__=0 -D__CUDACC_VER_BUILD__=130 -m64 -o <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-12_a_dlink.o&quot;</span> <span class="string">&quot;/usr/local/cuda/bin/crt/link.stub&quot;</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">$ g++ -m64 -o <span class="string">&quot;a.out&quot;</span> -std=c++14 -Wl,--start-group <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-12_a_dlink.o&quot;</span> <span class="string">&quot;/tmp/tmpxft_000003b0_00000000-10_vectorAdd.o&quot;</span>   <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib/stubs&quot;</span> <span class="string">&quot;-L/usr/local/cuda/bin/../targets/x86_64-linux/lib&quot;</span> -lcudadevrt  -lcudart_static  -lrt -lpthread  -ldl  -Wl,--end-group</span></span><br></pre></td></tr></table></figure>
+
+<p>上面这部分控制台的打印内容还是相当多的，这里我对其进行了简化，并结合上述的编译流程图，方便大家看出里面最核心的内容。</p>
+<figure class="highlight smalltalk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">➜  vectorAdd nvcc -dryrun --include-path=<span class="comment">&quot;../../common/inc&quot;</span> vectorAdd.cu</span><br><span class="line">#<span class="string">$ </span>gcc <span class="comment">&quot;vectorAdd.cu&quot;</span> &gt; <span class="comment">&quot;8_vectorAdd.cpp1.ii&quot;</span></span><br><span class="line">#<span class="string">$ </span>cicc -arch compute_30 --include_file_name <span class="comment">&quot;2_vectorAdd.fatbin.c&quot;</span> --orig_src_file_name <span class="comment">&quot;vectorAdd.cu&quot;</span> --gen_c_file_name <span class="comment">&quot;5_vectorAdd.cudafe1.c&quot;</span> --stub_file_name <span class="comment">&quot;5_vectorAdd.cudafe1.stub.c&quot;</span> <span class="comment">&quot;8_vectorAdd.cpp1.ii&quot;</span> -o <span class="comment">&quot;5_vectorAdd.ptx&quot;</span></span><br><span class="line">#<span class="string">$ </span>ptxas -arch=sm_30 <span class="comment">&quot;5_vectorAdd.ptx&quot;</span> -o <span class="comment">&quot;9_vectorAdd.sm_30.cubin&quot;</span></span><br><span class="line">#<span class="string">$ </span>fatbinary --create=<span class="comment">&quot;2_vectorAdd.fatbin&quot;</span> <span class="comment">&quot;--image=profile=sm_30,file=9_vectorAdd.sm_30.cubin&quot;</span> <span class="comment">&quot;--image=profile=compute_30,file=5_vectorAdd.ptx&quot;</span> --embedded-fatbin=<span class="comment">&quot;2_vectorAdd.fatbin.c&quot;</span></span><br><span class="line">#<span class="string">$ </span>gcc <span class="comment">&quot;vectorAdd.cu&quot;</span> &gt; <span class="comment">&quot;4_vectorAdd.cpp4.ii&quot;</span></span><br><span class="line">#<span class="string">$ </span>cudafe++ --gen_c_file_name <span class="comment">&quot;5_vectorAdd.cudafe1.cpp&quot;</span> --stub_file_name <span class="comment">&quot;5_vectorAdd.cudafe1.stub.c&quot;</span> <span class="comment">&quot;4_vectorAdd.cpp4.ii&quot;</span></span><br><span class="line">#<span class="string">$ </span>gcc -o <span class="comment">&quot;10_vectorAdd.o&quot;</span> <span class="comment">&quot;5_vectorAdd.cudafe1.cpp&quot;</span></span><br><span class="line">#<span class="string">$ </span>nvlink --register-link-binaries=<span class="comment">&quot;6_a_dlink.reg.c&quot;</span> <span class="comment">&quot;10_vectorAdd.o&quot;</span> -o <span class="comment">&quot;11_a_dlink.sm_30.cubin&quot;</span></span><br><span class="line">#<span class="string">$ </span>fatbinary --create=<span class="comment">&quot;7_a_dlink.fatbin&quot;</span> -link <span class="comment">&quot;--image=profile=sm_30,file=11_a_dlink.sm_30.cubin&quot;</span> --embedded-fatbin=<span class="comment">&quot;7_a_dlink.fatbin.c&quot;</span></span><br><span class="line">#<span class="string">$ </span>gcc -<span class="type">DFATBINFILE</span>=<span class="comment">&quot;\&quot;</span><span class="number">7</span>_a_dlink.fatbin.c\<span class="comment">&quot;&quot;</span> <span class="type">DREGISTERLINKBINARYFILE</span>=<span class="comment">&quot;\&quot;</span><span class="number">6</span>_a_dlink.reg.c\<span class="comment">&quot;&quot;</span> -o <span class="comment">&quot;12_a_dlink.o&quot;</span> <span class="comment">&quot;/usr/local/cuda/bin/crt/link.stub&quot;</span></span><br><span class="line">#<span class="string">$ </span>g++ -o <span class="comment">&quot;a.out&quot;</span> --start-group <span class="comment">&quot;12_a_dlink.o&quot;</span> <span class="comment">&quot;10_vectorAdd.o&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>用gcc编译器对vectorAdd.cu文件进行预处理，生成8_vectorAdd.cpp1.ii文件，注意后缀名为ii的文件就是预处理后的C++文件。<strong>这里有一个令人比较困惑的地方是，我明明调用的是nvcc，为什么会出来gcc指令？实际上nvcc只是一个编译器的调用集合，它会去调用很多其他的编译工具，比如gcc和后续的cicc、ptxas、fatbinary等等</strong>。</li>
+<li>用cicc将8_vectorAdd.cpp1.ii文件处理为5_vectorAdd.ptx文件，也就是CUDA的Virtual Architecture的汇编文件。cicc是一个基于LLVM的高层优化器和PTX生成器。详细信息可以参考<a target="_blank" rel="noopener" href="http://on-demand.gputechconf.com/gtc/2013/presentations/S3185-Building-GPU-Compilers-libNVVM.pdf">Building GPU Compilers with libNVVM</a>。</li>
+<li>用ptxas将5_vectorAdd.ptx文件根据Real Architecture编译为9_vectorAdd.sm_30.cubin文件。注意对于指定的每一个Virtual Architecture，需要重复进行1~3步。也就是整体编译链接图中的实线绿框部分。</li>
+<li>用fatbinary将不同的Virtual Architecture生成的.ptx文件和.cubin合并在一起生成.fatbin.c文件。之所以要将.ptx和.cubin文件一起塞到.fatbin.c中，是因为.ptx代表Virtual Architecture，而.cubin代表Real Architecture，当然这只是我的猜测。</li>
+<li>有了fatbin.c文件，CUDA部分的编译就暂时告一段落。接下来用gcc对vectorAdd.cu文件再进行一次预处理，得到4_vectorAdd.cpp4.ii文件。这次预处理主要是为了进行host部分的编译。</li>
+<li>用cudafe++将4_vectorAdd.cpp4.ii文件中的host和device部分进行分离，得到host部分5_vectorAdd.cudafe1.cpp文件。</li>
+<li>将分离的host部分代码5_vectorAdd.cudafe1.cpp结合刚才1~4步编译的CUDA产物2_vectorAdd.fatbin.c编译为10_vectorAdd.o。注意5_vectorAdd.cudafe1.cpp包含了5_vectorAdd.cudafe1.stub.c，而5_vectorAdd.cudafe1.stub.c包含了2_vectorAdd.fatbin.c，这样就保证10_vectorAdd.o既有host部分，又有device部分。另外对于每一个.cu文件，循环执行1~7步，对应整体编译链接图中的虚线绿框部分。整体来说，1~7步其实是将.cu中的device部分交由右边流程处理(CUDA专用Compiler)，将host部分交由左边流程处理(CPP&#x2F;C专用Compiler)，最终再将它们合并到一个object文件中。</li>
+<li>1~7步产生了不同.cu文件对应产物.o文件。此时，进入了Separate Compilation的重要一环，就是将不同.o文件中的device code重新定位到同一个文件中，即使用nvlink将所有device code编译到11_a_dlink.sm_30.cubin文件中。</li>
+<li>有了统一之后的.cubin文件，再使用fatbinary将.cubin文件处理为7_a_dlink.fatbin.c文件，方便C Compiler进行统一编译。</li>
+<li>将7_a_dlink.fatbin.c文件结合6_a_dlink.reg.c和cuda下的link.stub生成device code对应的最终编译产物12_a_dlink.o。注意link.stub是cuda&#x2F;bin&#x2F;crt下的，而此处的crt表示CUDA C Runtime，至于link.stub本质是什么，我也不是很清楚。</li>
+<li>最后使用g++将10_vectorAdd.o和12_a_dlink.o链接为最终的目标产物a.out。也就是将host object和device object链接在一起。</li>
+</ol>
+<h2 id="0x06-心得体会"><a href="#0x06-心得体会" class="headerlink" title="0x06 : 心得体会"></a>0x06 : 心得体会</h2><p>整篇文章比较简单，只是对CUDA的编译链接做了简单的阐述，很多话题没有更深入讨论，也是因为自己本身用到这部分的知识比较少，经验不足。之前是因为要在Qt Creator上使用CUDA，也就是需要利用qmake编译CUDA程序，参考的文章比较少，这才对CUDA的编译链接过程稍微做了一些了解。所以有些内容如果阐述的不详细或者有错误，请大家批评指正。</p>
+<h2 id="0x07-参考文献"><a href="#0x07-参考文献" class="headerlink" title="0x07 : 参考文献"></a>0x07 : 参考文献</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html">cuda-compiler-driver-nvcc</a></li>
+<li><a target="_blank" rel="noopener" href="http://on-demand.gputechconf.com/gtc/2013/presentations/S3185-Building-GPU-Compilers-libNVVM.pdf">Building GPU Compilers with libNVVM</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CUDA/" rel="tag"># CUDA</a>
+          </div>
+
+        
+
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  <div class="comments" id="disqus_thread">
+    <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+  </div>
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Pan Jianxiong</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="disqus" type="application/json">{"enable":true,"shortname":"polobymulberry","count":true,"i18n":{"disqus":"disqus"}}</script>
+<script src="/js/third-party/comments/disqus.js" defer></script>
+
+</body>
+</html>
