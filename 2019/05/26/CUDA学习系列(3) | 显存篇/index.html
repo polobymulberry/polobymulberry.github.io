@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"atom-one-light","dark":"atom-one-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":null},"fold":{"enable":true,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="0x00 : 前言上一篇文章CUDA学习系列(2) | 运行篇主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA学习系列(3) | 显存篇">
+<meta property="og:url" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/index.html">
+<meta property="og:site_name" content="Mulberry&#39;s Blog">
+<meta property="og:description" content="0x00 : 前言上一篇文章CUDA学习系列(2) | 运行篇主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/Memory_Latency_Capacity.png">
+<meta property="og:image" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/Memory_Hierarchy.png">
+<meta property="og:image" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/More_Threads_With_Fewer_Register_Per_Thread.png">
+<meta property="og:image" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/Block_Memory.png">
+<meta property="article:published_time" content="2019-05-26T08:22:12.000Z">
+<meta property="article:modified_time" content="2019-06-08T16:53:22.000Z">
+<meta property="article:author" content="Pan Jianxiong">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/Memory_Latency_Capacity.png">
+
+
+<link rel="canonical" href="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/","path":"2019/05/26/CUDA学习系列(3) | 显存篇/","title":"CUDA学习系列(3) | 显存篇"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CUDA学习系列(3) | 显存篇 | Mulberry's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Mulberry's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">沉淀自我</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0x00-%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">0x00 : 前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x01-Memory-Hierarchy"><span class="nav-number">2.</span> <span class="nav-text">0x01 : Memory Hierarchy</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Thread-Memory"><span class="nav-number">2.1.</span> <span class="nav-text">Thread Memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Block-Memory"><span class="nav-number">2.2.</span> <span class="nav-text">Block Memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Grid-Memory"><span class="nav-number">2.3.</span> <span class="nav-text">Grid Memory</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x02-Memory-Management"><span class="nav-number">3.</span> <span class="nav-text">0x02 : Memory Management</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Global-Memory"><span class="nav-number">3.1.</span> <span class="nav-text">Global Memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Shared-Memory"><span class="nav-number">3.2.</span> <span class="nav-text">Shared Memory</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x03-%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">0x03 : 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Pan Jianxiong"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Pan Jianxiong</p>
+  <div class="site-description" itemprop="description">专注3D应用全栈研发<br>分享产品思考与实践</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/polobymulberry" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;polobymulberry" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jianxiongpan@gmail.com" title="E-Mail → mailto:jianxiongpan@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Pan Jianxiong">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mulberry's Blog">
+      <meta itemprop="description" content="专注3D应用全栈研发<br>分享产品思考与实践">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="CUDA学习系列(3) | 显存篇 | Mulberry's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA学习系列(3) | 显存篇
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-05-26 16:22:12" itemprop="dateCreated datePublished" datetime="2019-05-26T16:22:12+08:00">2019-05-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2019-06-09 00:53:22" itemprop="dateModified" datetime="2019-06-09T00:53:22+08:00">2019-06-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/CUDA/" itemprop="url" rel="index"><span itemprop="name">CUDA</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/26/CUDA学习系列(3) | 显存篇/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.8k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>6 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 : 前言"></a>0x00 : 前言</h2><p>上一篇文章<a target="_blank" rel="noopener" href="https://polobymulberry.github.io/2019/04/06/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97%282%29%20%7C%20%E8%BF%90%E8%A1%8C%E7%AF%87/">CUDA学习系列(2) | 运行篇</a>主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次性外，显存中不同类型的Memory也是眼花缭乱。针对不同的情况选择不同的Memory，会对CUDA的运行有巨大影响。</p>
+<span id="more"></span>
+
+<h2 id="0x01-Memory-Hierarchy"><a href="#0x01-Memory-Hierarchy" class="headerlink" title="0x01 : Memory Hierarchy"></a>0x01 : Memory Hierarchy</h2><p>CUDA之所以要提出Memory层次性的概念，是基于一个共识：显存中有很多Memory种类，这些Memory都有一个这样的特性——<strong>空间越大，延迟越大</strong>，所以通过区分不同的层次，尽量满足不同的存储需求。另一方面，基于存储的局部性原理，Memory Hierarchy可以在少量的存储空间前提下，最大化存储性能。</p>
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Latency_Capacity.png" width="100%" style="display: block; margin: 0 auto;">
+
+<p>上图表达的是大部分计算机中的存储层次，所以说<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a>并不是特别针对CUDA提出来的，而是大部分计算机通用的概念，只是CUDA Memory Hierarchy稍微有些特别而已。下图表示的就是CUDA中的Memory机制。</p>
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Hierarchy.png" width="100%" style="display: block; margin: 0 auto;">
+
+<p>首先看看Device内部的Memory结构。可以看出有很多Memory类型，但是主要还是分为三种，也就是三个层次。1.Thread层次的Memory：Register和Local Memory。2.Block层次的Memory：Shared Memory，当然还有一些Cache Memory，图中没有提到，后面会简单介绍一下。3.Grid层次的Memory：Global Memory、Constant Memory和Texture Memory。根据之前提到的Memory特性，不难知道，以上Memory空间从大到小排序依次是Grid Level Memory -&gt; Block Level Memory -&gt; Thread Level Memory，这也意味着延迟越来越小。当然凡事都有特例，比如Local Memory，虽然处于Thread，但是延迟非常大。下面针对这些不同类型的Memory做个简单介绍。</p>
+<h3 id="Thread-Memory"><a href="#Thread-Memory" class="headerlink" title="Thread Memory"></a>Thread Memory</h3><p>Thread Memory顾名思义就是每个Thread可以单独读写，但是其他Thread访问不了的Memory，也就是Thread私有的Memory。</p>
+<ol>
+<li><strong>Register</strong><br>Register是CUDA Memory中最快的Memory类型。一般在kernel函数中声明的变量或者数组会放到Register中，当然数组必须是编译期就能确定大小的。Register的数目非常有限，并且是根据actived warps数目划分的，所以减少Register的使用可以提高actived warp的数目，进而提高性能。下图对这一现象进行了说明。</li>
+</ol>
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/More_Threads_With_Fewer_Register_Per_Thread.png" width="100%" style="display: block; margin: 0 auto;">
+
+<p>开发者想设置每个thread分配到的Register的数目有两种方法：<br>a. 给kernel函数添加<strong>launch_bounds</strong>声明，这样就可以在编译期间计算出每个thread所需的Register数目</p>
+<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__global__ void</span><br><span class="line">__launch_bounds__(maxThreadsPerBlock, minBlocksPerMultiprocessor)</span><br><span class="line"><span class="function"><span class="title">kernel</span>(<span class="params">...</span>)</span> &#123;</span><br><span class="line">    <span class="comment">// your kernel body</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>b. 编译时指定<code>-maxrregcount=&lt;n&gt;</code>，表示所有kernel函数分配到的Register最多只有N个<br>想深入这两种方法的具体用法可以参考CUDA文档。</p>
+<ol start="2">
+<li><strong>Local Memory</strong><br>本来应该放在Register的数据由于空间不够了怎么办？这时候就会发生Register Spilling现象。会将本该放在Register的数据放到Local Memory中。但是Local Memory其实和Global Memory的物理空间是一样的，所以Local Memory和Global Memory一样具有低延迟的问题。</li>
+</ol>
+<h3 id="Block-Memory"><a href="#Block-Memory" class="headerlink" title="Block Memory"></a>Block Memory</h3><p>Block Memory其实是由Shared Memory和各种Cache组成的。见下图。</p>
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Block_Memory.png" width="100%" style="display: block; margin: 0 auto;">
+
+<ol>
+<li><strong>Shared Memory</strong><br>Shared Memory是显存中非常重要的一个概念。它是On-Chip Memory，比Global Memory和Local Memory延迟要小很多。只有同一个Block内的thread才能访问到同一个Shared Memory变量。<br>在kernel函数内部定义一个Shared Memory变量需要在其前面加上**<strong>shared</strong><strong>。当然你也可以在kernel函数外面定义</strong><strong>shared</strong><strong>变量，这代表所有kernel可见。当然你也可以使用extern预先声明一个</strong><strong>shared</strong>**变量。比如</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> __shared__ <span class="type">int</span> tile[];</span><br></pre></td></tr></table></figure>
+
+<p>注意上述声明的tile数组并没有指定数组大小。可以通过kernel的launch参数进行动态指定，目前只支持一维数组。</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// &lt;&lt;&lt;&gt;&gt;&gt;中第三个参数指的就是分配的Shared Memory大小</span></span><br><span class="line">kernel&lt;&lt;&lt;grid, block, <span class="function">isize * <span class="title">sizeof</span><span class="params">(<span class="type">int</span>)</span>&gt;&gt;&gt;<span class="params">(...)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>Shared Memory可以用作：</p>
+<ul>
+<li>Block内部thread之间的通信</li>
+<li>作为Global Memory的Program-Managed Cache，提高Global Memory读取性能</li>
+</ul>
+<ol start="2">
+<li><strong>L1 Cache</strong><br>L1 Cache通常和L2 Cache一起用，通常是用来缓存Global Memory或者Local Memory的读取数据。在SM上，Shared Memory和L1 Cache用的是同一个On-Chip Memory，所以有下面这个函数对Shared Memory和L1 Cache的大小进行配置。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * cudaFuncCachePreferNone: no preference (default)</span><br><span class="line"> * cudaFuncCachePreferShared: prefer 48KB shared memory and 16KB L1 cache</span><br><span class="line"> * cudaFuncCachePreferL1: prefer 48KB L1 cache and 16KB shared memory</span><br><span class="line"> * cudaFuncCachePreferEqual: Prefer equal size of L1 cache and shared memory, both 32KB</span><br><span class="line"> */</span><br><span class="line">cudaError_t cudaFuncSetCacheConfig(const void* func, enum cudaFuncCache cacheConfig);</span><br></pre></td></tr></table></figure>
+
+<p>L1 Cache是可以通过编译选项将其关闭&#x2F;打开的。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> disable L1 Cache</span><br><span class="line"><span class="operator">-</span>Xptxas <span class="operator">-</span>dlcm<span class="operator">=</span>cg</span><br><span class="line"><span class="operator">/</span><span class="operator">/</span> enable L1 Cache</span><br><span class="line"><span class="operator">-</span>Xptxas <span class="operator">-</span>dlcm<span class="operator">=</span>ca</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><p><strong>Read Only Texture Cache</strong><br>Read Only Texture Cache是用来缓存Texture Memory的。它有一个强大的特性就是支持硬件级别的插值，对于2D纹理这类数据会有很大的用处。</p>
+</li>
+<li><p><strong>Read Only Constant Cache</strong><br>Read Only Constant Cache是用来缓存Constant Memory的。相对于Texture Cache，虽然都是Read Only，但是Constant Cache更适合Uniform Access，而Texture Cache更适合Scattered Access。</p>
+</li>
+</ol>
+<h3 id="Grid-Memory"><a href="#Grid-Memory" class="headerlink" title="Grid Memory"></a>Grid Memory</h3><p>Grid Memory类似Host端的主存，其实它也是唯一和Host端的主存进行转移的显存。</p>
+<ol>
+<li><p><strong>Global Memory</strong><br>Global Memory应该是平常开发过程中打交道最多的一种Memory类型，最大特点就是空间大但是延迟高。Global Memory变量使用**<strong>device</strong>**进行声明。虽然Global Memory本质上没有什么特殊的，但是Global Memory的使用和管理方面需要注意的点非常多，下一小节会详细讨论。</p>
+</li>
+<li><p><strong>Constant Memory</strong><br>对于一些常数非常适合放在Constant Memory中。并且Constant Memory变量需要使用**<strong>constant</strong>**进行声明。整个Constant Memory变量的使用可以参考如下代码：</p>
+</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// f(x) = a0*x0+a1*x1+a2*x2+a3*x3+a4*x4</span></span><br><span class="line">__constant__ <span class="type">float</span> coef[<span class="number">5</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用Constant Memory设置多项式的系数</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">setup_coef_constant</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="type">const</span> <span class="type">float</span> h_coef[] = &#123;a0, a1, a2, a3, a4&#125;;</span><br><span class="line">    <span class="comment">// cudaError_t cudaMemcpyToSymbol(const void* symbol, const void* src, size_t count);</span></span><br><span class="line">    <span class="built_in">cudaMemcpyToSymbol</span>(coef, h_coef, (<span class="number">5</span>) * <span class="built_in">sizeof</span>(<span class="type">float</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li><p><strong>Texture Memory</strong><br>Texture Memory是一种特殊类型的Global Memory。但是Texture Memory顾名思义，对于2D存储的数据有很好的空间局部性。</p>
+</li>
+<li><p><strong>L2 Cache</strong><br>L2 Cache也是用来做缓存的，直接缓存Global Memory的数据。和L1 Cache不同的在于，L2 Cache是Per-Device Cache，而L1 Cache是Per-SM Cache。</p>
+</li>
+</ol>
+<h2 id="0x02-Memory-Management"><a href="#0x02-Memory-Management" class="headerlink" title="0x02 : Memory Management"></a>0x02 : Memory Management</h2><h3 id="Global-Memory"><a href="#Global-Memory" class="headerlink" title="Global Memory"></a>Global Memory</h3><h3 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h3><h2 id="0x03-参考文献"><a href="#0x03-参考文献" class="headerlink" title="0x03 : 参考文献"></a>0x03 : 参考文献</h2><ul>
+<li>Professional CUDA C Programming</li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CUDA/" rel="tag"># CUDA</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/04/06/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(2)%20%7C%20%E8%BF%90%E8%A1%8C%E7%AF%87/" rel="prev" title="CUDA学习系列(2) | 运行篇">
+                  <i class="fa fa-angle-left"></i> CUDA学习系列(2) | 运行篇
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  <div class="comments" id="disqus_thread">
+    <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+  </div>
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Pan Jianxiong</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">8k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">26 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="disqus" type="application/json">{"enable":true,"shortname":"polobymulberry","count":true,"i18n":{"disqus":"disqus"}}</script>
+<script src="/js/third-party/comments/disqus.js" defer></script>
+
+</body>
+</html>
