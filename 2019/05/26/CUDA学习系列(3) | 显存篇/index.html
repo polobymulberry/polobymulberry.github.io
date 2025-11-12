@@ -21,7 +21,7 @@
 
     <meta name="description" content="0x00 : 前言上一篇文章CUDA学习系列(2) | 运行篇主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次">
 <meta property="og:type" content="article">
-<meta property="og:title" content="CUDA学习系列(3) | 显存篇">
+<meta property="og:title" content="CUDA学习系列(3) | 显存篇 - 未完待续">
 <meta property="og:url" content="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/index.html">
 <meta property="og:site_name" content="Mulberry&#39;s Blog">
 <meta property="og:description" content="0x00 : 前言上一篇文章CUDA学习系列(2) | 运行篇主要介绍了CUDA的Thread Hierarchy，本文则介绍CUDA另一个重要特性Memory Hierarchy，意思是CUDA Memory有很多种类，这些种类可以根据层次进行划分。事实上，Thread Hierarchy和Memory Hierarchy中的层次性讲的是同一个东西，本质上都是由硬件的层次性决定的。除了显存的层次">
@@ -41,10 +41,10 @@
 <link rel="canonical" href="http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/","path":"2019/05/26/CUDA学习系列(3) | 显存篇/","title":"CUDA学习系列(3) | 显存篇"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20|%20%E6%98%BE%E5%AD%98%E7%AF%87/","path":"2019/05/26/CUDA学习系列(3) | 显存篇/","title":"CUDA学习系列(3) | 显存篇 - 未完待续"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>CUDA学习系列(3) | 显存篇 | Mulberry's Blog</title>
+<title>CUDA学习系列(3) | 显存篇 - 未完待续 | Mulberry's Blog</title>
   
 
 
@@ -207,12 +207,12 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="CUDA学习系列(3) | 显存篇 | Mulberry's Blog">
+      <meta itemprop="name" content="CUDA学习系列(3) | 显存篇 - 未完待续 | Mulberry's Blog">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          CUDA学习系列(3) | 显存篇
+          CUDA学习系列(3) | 显存篇 - 未完待续
         </h1>
 
         <div class="post-meta-container">
@@ -291,35 +291,36 @@
 <span id="more"></span>
 
 <h2 id="0x01-Memory-Hierarchy"><a href="#0x01-Memory-Hierarchy" class="headerlink" title="0x01 : Memory Hierarchy"></a>0x01 : Memory Hierarchy</h2><p>CUDA之所以要提出Memory层次性的概念，是基于一个共识：显存中有很多Memory种类，这些Memory都有一个这样的特性——<strong>空间越大，延迟越大</strong>，所以通过区分不同的层次，尽量满足不同的存储需求。另一方面，基于存储的局部性原理，Memory Hierarchy可以在少量的存储空间前提下，最大化存储性能。</p>
-<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Latency_Capacity.png" width="100%" style="display: block; margin: 0 auto;">
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Latency_Capacity.png" width="50%" style="display: block; margin: 0 auto;">
 
 <p>上图表达的是大部分计算机中的存储层次，所以说<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a>并不是特别针对CUDA提出来的，而是大部分计算机通用的概念，只是CUDA Memory Hierarchy稍微有些特别而已。下图表示的就是CUDA中的Memory机制。</p>
-<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Hierarchy.png" width="100%" style="display: block; margin: 0 auto;">
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Memory_Hierarchy.png" width="65%" style="display: block; margin: 0 auto;">
 
-<p>首先看看Device内部的Memory结构。可以看出有很多Memory类型，但是主要还是分为三种，也就是三个层次。1.Thread层次的Memory：Register和Local Memory。2.Block层次的Memory：Shared Memory，当然还有一些Cache Memory，图中没有提到，后面会简单介绍一下。3.Grid层次的Memory：Global Memory、Constant Memory和Texture Memory。根据之前提到的Memory特性，不难知道，以上Memory空间从大到小排序依次是Grid Level Memory -&gt; Block Level Memory -&gt; Thread Level Memory，这也意味着延迟越来越小。当然凡事都有特例，比如Local Memory，虽然处于Thread，但是延迟非常大。下面针对这些不同类型的Memory做个简单介绍。</p>
+<p>首先看看Device内部的Memory结构。可以看出有很多Memory类型，但是主要还是分为三种，也就是三个层次。</p>
+<p>1.<strong>Thread层次的Memory：</strong>Register和Local Memory。<br>2.<strong>Block层次的Memory：</strong>Shared Memory，当然还有一些Cache Memory，图中没有提到，后面会简单介绍一下。<br>3.<strong>Grid层次的Memory：</strong>Global Memory、Constant Memory和Texture Memory。根据之前提到的Memory特性，不难知道，以上Memory空间从大到小排序依次是Grid Level Memory -&gt; Block Level Memory -&gt; Thread Level Memory，这也意味着延迟越来越小。当然凡事都有特例，比如Local Memory，虽然处于Thread，但是延迟非常大。下面针对这些不同类型的Memory做个简单介绍。</p>
 <h3 id="Thread-Memory"><a href="#Thread-Memory" class="headerlink" title="Thread Memory"></a>Thread Memory</h3><p>Thread Memory顾名思义就是每个Thread可以单独读写，但是其他Thread访问不了的Memory，也就是Thread私有的Memory。</p>
 <ol>
 <li><strong>Register</strong><br>Register是CUDA Memory中最快的Memory类型。一般在kernel函数中声明的变量或者数组会放到Register中，当然数组必须是编译期就能确定大小的。Register的数目非常有限，并且是根据actived warps数目划分的，所以减少Register的使用可以提高actived warp的数目，进而提高性能。下图对这一现象进行了说明。</li>
 </ol>
-<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/More_Threads_With_Fewer_Register_Per_Thread.png" width="100%" style="display: block; margin: 0 auto;">
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/More_Threads_With_Fewer_Register_Per_Thread.png" width="75%" style="display: block; margin: 0 auto;">
 
 <p>开发者想设置每个thread分配到的Register的数目有两种方法：<br>a. 给kernel函数添加<strong>launch_bounds</strong>声明，这样就可以在编译期间计算出每个thread所需的Register数目</p>
-<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__global__ void</span><br><span class="line">__launch_bounds__(maxThreadsPerBlock, minBlocksPerMultiprocessor)</span><br><span class="line"><span class="function"><span class="title">kernel</span>(<span class="params">...</span>)</span> &#123;</span><br><span class="line">    <span class="comment">// your kernel body</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">__global__ <span class="type">void</span></span><br><span class="line">__launch_bounds__(maxThreadsPerBlock, minBlocksPerMultiprocessor)</span><br><span class="line"><span class="built_in">kernel</span>(...) &#123;</span><br><span class="line">    <span class="comment">// your kernel body</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>b. 编译时指定<code>-maxrregcount=&lt;n&gt;</code>，表示所有kernel函数分配到的Register最多只有N个<br>想深入这两种方法的具体用法可以参考CUDA文档。</p>
 <ol start="2">
 <li><strong>Local Memory</strong><br>本来应该放在Register的数据由于空间不够了怎么办？这时候就会发生Register Spilling现象。会将本该放在Register的数据放到Local Memory中。但是Local Memory其实和Global Memory的物理空间是一样的，所以Local Memory和Global Memory一样具有低延迟的问题。</li>
 </ol>
 <h3 id="Block-Memory"><a href="#Block-Memory" class="headerlink" title="Block Memory"></a>Block Memory</h3><p>Block Memory其实是由Shared Memory和各种Cache组成的。见下图。</p>
-<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Block_Memory.png" width="100%" style="display: block; margin: 0 auto;">
+<img src="/2019/05/26/CUDA学习系列(3)%20%7C%20显存篇/Block_Memory.png" width="50%" style="display: block; margin: 0 auto;">
 
 <ol>
-<li><strong>Shared Memory</strong><br>Shared Memory是显存中非常重要的一个概念。它是On-Chip Memory，比Global Memory和Local Memory延迟要小很多。只有同一个Block内的thread才能访问到同一个Shared Memory变量。<br>在kernel函数内部定义一个Shared Memory变量需要在其前面加上**<strong>shared</strong><strong>。当然你也可以在kernel函数外面定义</strong><strong>shared</strong><strong>变量，这代表所有kernel可见。当然你也可以使用extern预先声明一个</strong><strong>shared</strong>**变量。比如</li>
+<li><strong>Shared Memory</strong><br>Shared Memory是显存中非常重要的一个概念。它是On-Chip Memory，比Global Memory和Local Memory延迟要小很多。只有同一个Block内的thread才能访问到同一个Shared Memory变量。<br>在kernel函数内部定义一个Shared Memory变量需要在其前面加上<strong>__shared__</strong>。当然你也可以在kernel函数外面定义<strong>__shared__</strong>变量，这代表所有kernel可见。当然你也可以使用extern预先声明一个<strong>__shared__</strong>变量。比如</li>
 </ol>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> __shared__ <span class="type">int</span> tile[];</span><br></pre></td></tr></table></figure>
 
 <p>注意上述声明的tile数组并没有指定数组大小。可以通过kernel的launch参数进行动态指定，目前只支持一维数组。</p>
-<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// &lt;&lt;&lt;&gt;&gt;&gt;中第三个参数指的就是分配的Shared Memory大小</span></span><br><span class="line">kernel&lt;&lt;&lt;grid, block, <span class="function">isize * <span class="title">sizeof</span><span class="params">(<span class="type">int</span>)</span>&gt;&gt;&gt;<span class="params">(...)</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// &lt;&lt;&lt;&gt;&gt;&gt;中第三个参数指的就是分配的Shared Memory大小</span></span><br><span class="line">kernel&lt;&lt;&lt;grid, block, <span class="function">isize * <span class="title">sizeof</span><span class="params">(<span class="type">int</span>)</span>&gt;&gt;&gt;<span class="params">(...)</span></span></span><br></pre></td></tr></table></figure>
 
 <p>Shared Memory可以用作：</p>
 <ul>
@@ -329,10 +330,10 @@
 <ol start="2">
 <li><strong>L1 Cache</strong><br>L1 Cache通常和L2 Cache一起用，通常是用来缓存Global Memory或者Local Memory的读取数据。在SM上，Shared Memory和L1 Cache用的是同一个On-Chip Memory，所以有下面这个函数对Shared Memory和L1 Cache的大小进行配置。</li>
 </ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * cudaFuncCachePreferNone: no preference (default)</span><br><span class="line"> * cudaFuncCachePreferShared: prefer 48KB shared memory and 16KB L1 cache</span><br><span class="line"> * cudaFuncCachePreferL1: prefer 48KB L1 cache and 16KB shared memory</span><br><span class="line"> * cudaFuncCachePreferEqual: Prefer equal size of L1 cache and shared memory, both 32KB</span><br><span class="line"> */</span><br><span class="line">cudaError_t cudaFuncSetCacheConfig(const void* func, enum cudaFuncCache cacheConfig);</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * cudaFuncCachePreferNone: no preference (default)</span></span><br><span class="line"><span class="comment"> * cudaFuncCachePreferShared: prefer 48KB shared memory and 16KB L1 cache</span></span><br><span class="line"><span class="comment"> * cudaFuncCachePreferL1: prefer 48KB L1 cache and 16KB shared memory</span></span><br><span class="line"><span class="comment"> * cudaFuncCachePreferEqual: Prefer equal size of L1 cache and shared memory, both 32KB</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">cudaError_t <span class="title">cudaFuncSetCacheConfig</span><span class="params">(<span class="type">const</span> <span class="type">void</span>* func, <span class="keyword">enum</span> cudaFuncCache cacheConfig)</span></span>;</span><br></pre></td></tr></table></figure>
 
 <p>L1 Cache是可以通过编译选项将其关闭&#x2F;打开的。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> disable L1 Cache</span><br><span class="line"><span class="operator">-</span>Xptxas <span class="operator">-</span>dlcm<span class="operator">=</span>cg</span><br><span class="line"><span class="operator">/</span><span class="operator">/</span> enable L1 Cache</span><br><span class="line"><span class="operator">-</span>Xptxas <span class="operator">-</span>dlcm<span class="operator">=</span>ca</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># disable L1 Cache</span></span><br><span class="line">-Xptxas -dlcm=cg</span><br><span class="line"><span class="comment"># enable L1 Cache</span></span><br><span class="line">-Xptxas -dlcm=ca</span><br></pre></td></tr></table></figure>
 
 <ol start="3">
 <li><p><strong>Read Only Texture Cache</strong><br>Read Only Texture Cache是用来缓存Texture Memory的。它有一个强大的特性就是支持硬件级别的插值，对于2D纹理这类数据会有很大的用处。</p>
@@ -342,9 +343,9 @@
 </ol>
 <h3 id="Grid-Memory"><a href="#Grid-Memory" class="headerlink" title="Grid Memory"></a>Grid Memory</h3><p>Grid Memory类似Host端的主存，其实它也是唯一和Host端的主存进行转移的显存。</p>
 <ol>
-<li><p><strong>Global Memory</strong><br>Global Memory应该是平常开发过程中打交道最多的一种Memory类型，最大特点就是空间大但是延迟高。Global Memory变量使用**<strong>device</strong>**进行声明。虽然Global Memory本质上没有什么特殊的，但是Global Memory的使用和管理方面需要注意的点非常多，下一小节会详细讨论。</p>
+<li><p><strong>Global Memory</strong><br>Global Memory应该是平常开发过程中打交道最多的一种Memory类型，最大特点就是空间大但是延迟高。Global Memory变量使用<strong>__device__</strong>进行声明。虽然Global Memory本质上没有什么特殊的，但是Global Memory的使用和管理方面需要注意的点非常多，下一小节会详细讨论。</p>
 </li>
-<li><p><strong>Constant Memory</strong><br>对于一些常数非常适合放在Constant Memory中。并且Constant Memory变量需要使用**<strong>constant</strong>**进行声明。整个Constant Memory变量的使用可以参考如下代码：</p>
+<li><p><strong>Constant Memory</strong><br>对于一些常数非常适合放在Constant Memory中。并且Constant Memory变量需要使用<strong>__constant__</strong>进行声明。整个Constant Memory变量的使用可以参考如下代码：</p>
 </li>
 </ol>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// f(x) = a0*x0+a1*x1+a2*x2+a3*x3+a4*x4</span></span><br><span class="line">__constant__ <span class="type">float</span> coef[<span class="number">5</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用Constant Memory设置多项式的系数</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">setup_coef_constant</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="type">const</span> <span class="type">float</span> h_coef[] = &#123;a0, a1, a2, a3, a4&#125;;</span><br><span class="line">    <span class="comment">// cudaError_t cudaMemcpyToSymbol(const void* symbol, const void* src, size_t count);</span></span><br><span class="line">    <span class="built_in">cudaMemcpyToSymbol</span>(coef, h_coef, (<span class="number">5</span>) * <span class="built_in">sizeof</span>(<span class="type">float</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
