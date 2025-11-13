@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.26.0","exturl":false,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"atom-one-light","dark":"atom-one-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":null},"fold":{"enable":true,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本人接触任务调度相关领域没多久，之前主要做的还是图形学相关的应用研发，机缘巧合才开始接触的任务调度。网上大部分的任务调度方案动辄涉及海量任务，超高并发，但是很多早期的多任务处理需求，没有条件（这个条件指的是人和机器）也没有必要（这个必要指的是需求量的大小）上这些方案。随着项目需求的持续迭代，技术规模才逐渐变得庞大，技术方案也更加成熟。一般来说技术方案从稚嫩到成熟，并不是一蹴而就的（当然如果研发很有">
+<meta property="og:type" content="article">
+<meta property="og:title" content="任务调度系列(1) | Celery篇">
+<meta property="og:url" content="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20|%20Celery%E7%AF%87/index.html">
+<meta property="og:site_name" content="Mulberry&#39;s Blog">
+<meta property="og:description" content="本人接触任务调度相关领域没多久，之前主要做的还是图形学相关的应用研发，机缘巧合才开始接触的任务调度。网上大部分的任务调度方案动辄涉及海量任务，超高并发，但是很多早期的多任务处理需求，没有条件（这个条件指的是人和机器）也没有必要（这个必要指的是需求量的大小）上这些方案。随着项目需求的持续迭代，技术规模才逐渐变得庞大，技术方案也更加成熟。一般来说技术方案从稚嫩到成熟，并不是一蹴而就的（当然如果研发很有">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20%7C%20Celery%E7%AF%87/Top_level_Celery_archtechture.webp">
+<meta property="article:published_time" content="2025-11-12T10:08:19.000Z">
+<meta property="article:modified_time" content="2025-11-13T11:40:20.315Z">
+<meta property="article:author" content="Pan Jianxiong">
+<meta property="article:tag" content="Celery">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20%7C%20Celery%E7%AF%87/Top_level_Celery_archtechture.webp">
+
+
+<link rel="canonical" href="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20|%20Celery%E7%AF%87/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20|%20Celery%E7%AF%87/","path":"2025/11/12/任务调度系列(1) | Celery篇/","title":"任务调度系列(1) | Celery篇"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>任务调度系列(1) | Celery篇 | Mulberry's Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Mulberry's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">沉淀自我</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Pan Jianxiong"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Pan Jianxiong</p>
+  <div class="site-description" itemprop="description">专注3D应用全栈研发<br>分享产品思考与实践</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/polobymulberry" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;polobymulberry" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jianxiongpan@gmail.com" title="E-Mail → mailto:jianxiongpan@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20|%20Celery%E7%AF%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Pan Jianxiong">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mulberry's Blog">
+      <meta itemprop="description" content="专注3D应用全栈研发<br>分享产品思考与实践">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="任务调度系列(1) | Celery篇 | Mulberry's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          任务调度系列(1) | Celery篇
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-11-12 18:08:19" itemprop="dateCreated datePublished" datetime="2025-11-12T18:08:19+08:00">2025-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-11-13 19:40:20" itemprop="dateModified" datetime="2025-11-13T19:40:20+08:00">2025-11-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" itemprop="url" rel="index"><span itemprop="name">任务调度</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20%7C%20Celery%E7%AF%87/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2025/11/12/任务调度系列(1) | Celery篇/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>5 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本人接触任务调度相关领域没多久，之前主要做的还是图形学相关的应用研发，机缘巧合才开始接触的任务调度。网上大部分的任务调度方案动辄涉及海量任务，超高并发，但是很多早期的多任务处理需求，没有条件（这个条件指的是人和机器）也没有必要（这个必要指的是需求量的大小）上这些方案。随着项目需求的持续迭代，技术规模才逐渐变得庞大，技术方案也更加成熟。一般来说技术方案从稚嫩到成熟，并不是一蹴而就的（当然如果研发很有经验，可能是可以直接一步到位的）而且也很少有人记录分享这种技术随业务进化的过程。这段时间自己摸索花了不少时间，希望能记录下来，避免后续大家踩坑。</p>
+<span id="more"></span>
+<p>直接进入正题，有这样一个需求，需要离线使用文本生成图像的服务（也就是输入一段文本，然后生成文本所描述的图像，<strong>大约10s出一张图</strong>），目标给定100w段文本，生成100w张图片。算了一下，一台机器不眠不休一共需要115.74天，项目黄了之前估计都没跑完。所以最简单的想法就是加机器，不过预算有限，只加到了10台机器，这样一算，平均只要11.6天就能跑完了，看起来还是可以接受的。</p>
+<p>于是你每台机器手动分配了10w的文本去跑图片，结果发现出问题了。你分析总结了一下，发现核心其实就是两个问题：</p>
+<blockquote>
+<p>1.有机器&#x2F;代码偶尔会卡死，你需要时不时观察机器是否可用，不可用还要手动重启。<br>2.每台机器的配置不太一样，最慢的机器跑10w需要20多天，所以你最多要等20天。</p>
+</blockquote>
+<p>总结提炼出来就是要解决两个问题：</p>
+<blockquote>
+<p>1.负载均衡：调整任务分配策略以确保最后所有机器能够用差不多时间运行完所有任务，不会有机器一直空闲。<br>2.失败重试：不需要时刻观察机器状态，能够自动将失败的任务发送到当前可运行的机器进行重试，超过重试次数后才确认最终失败。</p>
+</blockquote>
+<p>这时候你又想到了一个绝妙的方案，弄一个机器作为master来统一管理所有机器的状态以及所有任务的分配，这也是中心化任务分配的思路。master机器上用数据库存储了100w段文本转图像任务（任务状态为WAITING），然后让10台机器去数据库中取待运行的任务，同时更新任务的状态（WAITING -&gt; SCHEDULED），直到任务运行（RUNNING）完毕，将任务的状态更新为COMPLETED，这样其他机器就不会重复运行该任务了。经过这套机制，基本上解决了负载均衡的问题，因为空闲的机器会自己去master机器拉取任务运行，这也是最基本的负载均衡算法Round Robin。</p>
+<p>还剩下一个失败重试的问题。失败分为两种情况：1.重试一下也可以正常运行 2.重试多次也不行。这时候你就需要有个定时服务，去轮询数据库中任务的状态，比如长时间任务的状态（RUNNING）一直没更新，那就认为任务超时失败了（TIMEOUT），或者任务的状态是FAILED，那就重试任务。如果失败超过3次就默认这个任务最终是失败的。</p>
+<p>这时候你就会发现，10台机器上除了运行文本转图像的代码之外，还加上了从数据库中获取任务和去数据库存储任务结果的功能。我们把10台机器上的这些读写任务的功能统称为Worker，而生成待运行的任务并填充到数据库中的功能叫做Broker，往数据库中存储任务结果的功能叫做Backend。随着数据量变大，你发现使用数据库去读写任务状态，会导致查询速度很慢，所以你考虑将Broker和Backend的存储方案换成了Redis。</p>
+<p>这时候你又发现不管是哪一个Worker，从Broker获取任务和去Backend存取任务结果的代码好像重复了，你就会想有没有什么成熟的框架解决这个问题，于是就发现了Celery。而这一切思考路径都显得非常自然，合情合理，这也是为什么我第一次看到Celery这个框架的时候，我就觉得找对了。</p>
+<p>可以看到下图中，Celery的Broker是支持RabbitMQ和Redis的，用来接收客户端发来的任务请求，并将这些待运行任务存储到任务队列里面。和我们之前手动使用数据库的方式不同，使用队列存储待运行任务的方案会更加灵活，方便后续对任务进行优先级调度。Celery的Worker则通过Pull的方式从Broker中获取待运行的任务，并将最终结果存储到Backend里面，而Backend一般常用的也是RabbitMQ和Redis，当然如果有持久化的需求，就得上MySQL或者PostgreSQL之类的数据库存储。</p>
+<img src="/2025/11/12/任务调度系列(1)%20%7C%20Celery篇/Top_level_Celery_archtechture.webp" width="100%" style="display: block; margin: 0 auto;">
+
+<p>本文主要记录了下任务调度中，早期采用Celery的心路历程，并没有详细介绍Celery本身的框架细节，感觉在AI Coding时代，理解不同架构在不同业务场景下的优劣，平衡各方面的成本，才是比较重要的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Celery/" rel="tag"># Celery</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/05/26/CUDA%E5%AD%A6%E4%B9%A0%E7%B3%BB%E5%88%97(3)%20%7C%20%E6%98%BE%E5%AD%98%E7%AF%87/" rel="prev" title="CUDA学习系列(3) | 显存篇 - 未完待续">
+                  <i class="fa fa-angle-left"></i> CUDA学习系列(3) | 显存篇 - 未完待续
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  <div class="comments" id="disqus_thread">
+    <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+  </div>
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Pan Jianxiong</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">9k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">31 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<script class="next-config" data-name="disqus" type="application/json">{"enable":true,"shortname":"polobymulberry","count":true,"i18n":{"disqus":"disqus"}}</script>
+<script src="/js/third-party/comments/disqus.js" defer></script>
+
+</body>
+</html>
