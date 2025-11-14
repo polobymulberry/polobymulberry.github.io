@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/2025/11/12/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(1)%20%7C%20Celery%E7%AF%87/Top_level_Celery_archtechture.webp">
 <meta property="article:published_time" content="2025-11-12T10:08:19.000Z">
-<meta property="article:modified_time" content="2025-11-13T13:05:33.807Z">
+<meta property="article:modified_time" content="2025-11-14T05:17:03.345Z">
 <meta property="article:author" content="Pan Jianxiong">
 <meta property="article:tag" content="Celery">
 <meta name="twitter:card" content="summary">
@@ -57,6 +57,8 @@
 
   
 
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
 
 
 
@@ -147,7 +149,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -156,7 +158,7 @@
         <span class="site-state-item-name">分类</span>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-count">3</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
@@ -227,7 +229,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-11-13 21:05:33" itemprop="dateModified" datetime="2025-11-13T21:05:33+08:00">2025-11-13</time>
+      <time title="修改时间：2025-11-14 13:17:03" itemprop="dateModified" datetime="2025-11-14T13:17:03+08:00">2025-11-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -267,14 +269,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>1.6k</span>
+      <span>1.7k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>5 分钟</span>
+      <span>6 分钟</span>
     </span>
 </div>
 
@@ -296,7 +298,42 @@
 <blockquote>
 <p>1.负载均衡：调整任务分配策略以确保最后所有机器能够用差不多时间运行完所有任务，不会有机器一直空闲。<br>2.失败重试：不需要时刻观察机器状态，能够自动将失败的任务发送到当前可运行的机器进行重试，超过重试次数后才确认最终失败。</p>
 </blockquote>
-<h2 id="0x02-基于数据库的任务调度方案"><a href="#0x02-基于数据库的任务调度方案" class="headerlink" title="0x02 : 基于数据库的任务调度方案"></a>0x02 : 基于数据库的任务调度方案</h2><p>这时候你又想到了一个绝妙的方案，弄一个机器作为master来统一管理所有机器的状态以及所有任务的分配，这也是中心化任务分配的思路。master机器上用数据库存储了100w段文本转图像任务（任务状态为WAITING），然后让10台机器去数据库中取待运行的任务，同时更新任务的状态（WAITING -&gt; SCHEDULED），直到任务运行（RUNNING）完毕，将任务的状态更新为COMPLETED，这样其他机器就不会重复运行该任务了。经过这套机制，基本上解决了负载均衡的问题，因为空闲的机器会自己去master机器拉取任务运行，这也是最基本的负载均衡算法Round Robin。</p>
+<h2 id="0x02-基于数据库的任务调度方案"><a href="#0x02-基于数据库的任务调度方案" class="headerlink" title="0x02 : 基于数据库的任务调度方案"></a>0x02 : 基于数据库的任务调度方案</h2><p>这时候你又想到了一个绝妙的方案，弄一个机器作为master来统一管理所有机器的状态以及所有任务的分配，这也是中心化任务分配的思路。master机器上用数据库存储了100w段文本转图像任务（任务状态为WAITING），然后让10台机器去数据库中取待运行的任务，同时更新任务的状态（WAITING -&gt; RUNNING），直到任务运行完毕，将任务的状态更新为COMPLETED，这样其他机器就不会重复运行该任务了。经过这套机制，基本上解决了负载均衡的问题，因为空闲的机器会自己去master机器拉取任务运行，这也是最基本的负载均衡算法Round Robin。</p>
+<div style="text-align: center;">
+
+<pre><code class="highlight mermaid">flowchart TB
+    subgraph Master[&quot;Master 节点&quot;]
+        direction LR
+        MasterNode[Master 节点任务调度逻辑]
+    end
+
+    subgraph DBGroup[&quot; &quot;]
+        direction LR
+        DB[(MySQL 数据库&lt;br/&gt;存储 100w 任务&lt;br/&gt;)]
+        Note[&quot;任务状态类型&lt;br/&gt;WAITING / RUNNING / COMPLETED&quot;]
+        DB -.- Note
+    end
+
+    subgraph Worker[&quot;Worker 节点(共10台)&quot;]
+        direction LR
+        Worker0[Worker 0]
+        Worker1[Worker 1]
+        Dots[…]
+        Worker9[Worker 9]
+    end
+
+    %% Master 与数据库
+    MasterNode &lt;--&gt; DBGroup
+
+    %% Workers 与 Master 节点
+    Worker0 -- 空闲中，拉取Status==WAITING的任务 --&gt; MasterNode
+    Worker1 -- 任务结束，写回结果，Status置为COMPLETED --&gt; MasterNode
+    Worker9 -- 开始运行，Status置为RUNNING --&gt; MasterNode</code></pre>
+
+</div>
+
+
+
 <p>还剩下一个失败重试的问题。失败分为两种情况：1.重试一下也可以正常运行 2.重试多次也不行。这时候你就需要有个定时服务，去轮询数据库中任务的状态，比如长时间任务的状态（RUNNING）一直没更新，那就认为任务超时失败了（TIMEOUT），或者任务的状态是FAILED，那就重试任务。如果失败超过3次就默认这个任务最终是失败的。</p>
 <p>这时候你就会发现，10台机器上除了运行文本转图像的代码之外，还加上了从数据库中获取任务和去数据库存储任务结果的功能。我们把10台机器上的这些读写任务的功能统称为Worker，而生成待运行的任务并填充到数据库中的功能叫做Broker，往数据库中存储任务结果的功能叫做Backend。随着数据量变大，你发现使用数据库去读写任务状态，会导致查询速度很慢，所以你考虑将Broker和Backend的存储方案换成了Redis。</p>
 <h2 id="0x03-相识Celery"><a href="#0x03-相识Celery" class="headerlink" title="0x03 : 相识Celery"></a>0x03 : 相识Celery</h2><p>这时候你又发现不管是哪一个Worker，从Broker获取任务和去Backend存取任务结果的代码好像重复了，你就会想有没有什么成熟的框架解决这个问题，于是就发现了Celery。而这一切思考路径都显得非常自然，合情合理，这也是为什么我第一次看到Celery这个框架的时候，我就觉得找对了。</p>
@@ -325,6 +362,9 @@
                 </a>
             </div>
             <div class="post-nav-item">
+                <a href="/2025/11/13/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E7%B3%BB%E5%88%97(2)%20%7C%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E7%BC%96%E6%8E%92%E7%AF%87/" rel="next" title="任务调度系列(2) | 多任务编排篇">
+                  任务调度系列(2) | 多任务编排篇 <i class="fa fa-angle-right"></i>
+                </a>
             </div>
           </div>
     </footer>
@@ -360,13 +400,13 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-line"></i>
     </span>
-    <span title="站点总字数">9k</span>
+    <span title="站点总字数">11k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">31 分钟</span>
+    <span title="站点阅读时长">35 分钟</span>
   </span>
 </div>
 <div class="busuanzi-count">
